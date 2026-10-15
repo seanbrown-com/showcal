@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block content %}<a class="back-link" href="{% url 'detail' event.pk %}">← Back to concert</a>
+<div class="page-heading">
+<h1>Find your crowd<span class="orange">.</span>
+</h1>
+<p>Possible Facebook event pages for {{ event.title }}. Check the date and venue before responding.</p>
+</div>{% if error %}<p class="notice warning">{{ error }}</p>{% endif %}
+{% for result in results %}<article class="panel">
+<h3>
+<a href="{{ result.url }}" target="_blank" rel="noopener noreferrer">{{ result.title }} ↗</a>
+</h3>
+<p>{{ result.description }}</p>
+</article>{% empty %}<div class="empty-state">
+<h3>No indexed event pages found.</h3>
+<p>The organizer may not have published one. Try the search links on the concert page.</p>
+</div>{% endfor %}
+{% endblock %}

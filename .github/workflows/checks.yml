@@ -1,0 +1,28 @@
+name: Checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - run: pip install -r requirements.lock.txt
+      - run: python manage.py check
+      - run: python manage.py makemigrations --check --dry-run
+      - run: python manage.py test
+      - run: python -m unittest discover -s scripts -p 'test_*.py'
+      - run: bash -n scripts/common.sh scripts/install-lxc.sh scripts/update-lxc.sh
+      - name: Validate Compose files
+        run: |
+          python scripts/configure.py create --url http://localhost:8000
+          docker compose config --quiet
+      - name: Build application image
+        run: docker build -t showcal:ci .

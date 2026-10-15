@@ -1,0 +1,97 @@
+{% extends 'base.html' %}{% load tz %}
+{% block content %}<section class="discovery-hero">
+<div>
+<span class="eyebrow">
+<span class="live-dot">
+</span> YOUR LOCAL LIVE MUSIC RADAR</span>
+<h1>Be there for<br>the good part<span class="orange">.</span>
+</h1>
+<p>Find your artists. Discover a show. Fill your calendar.</p>
+<div class="discovery-actions">
+<a class="location-pill" href="/settings/">⌖ {{ profile.zip_code }} <span>within {{ profile.radius }} miles</span> ↗</a>
+<a class="button" href="{% url 'calendar_settings' %}">Subscribe to calendar ↗</a>
+</div>
+</div>
+<div class="hero-art" aria-hidden="true">
+<div class="orbit orbit-one">
+</div>
+<div class="orbit orbit-two">
+</div>
+<div class="orbit orbit-three">
+</div>
+<div class="ticket-shape">
+<span>ADMIT YOU + YOUR PEOPLE</span>
+<strong>LIVE<br>IS BETTER.</strong>
+<div class="ticket-bottom">THE NEXT GREAT NIGHT <b>↗</b>
+</div>
+</div>
+<span class="art-caption">TURN “SOMEDAY” INTO “SEE YOU THERE.”</span>
+</div>
+</section>
+<div class="dashboard-strip">
+<div>
+<b>6</b>
+<span>months of shows</span>
+<a href="/calendar/" aria-label="View concert calendar">↗</a>
+</div>
+<div>
+<b>{{ artist_count|stringformat:'02d' }}</b>
+<span>favorite artists</span>
+<a href="/artists/" aria-label="View favorite artists">↗</a>
+</div>
+<div>
+<span class="mini-icon">◷</span>
+<span>Your artists.<br>
+<strong>Your next night out.</strong>
+</span>
+</div>
+</div>
+<section class="shows">
+<div class="section-heading">
+<div>
+<span class="eyebrow">OUT OF YOUR HEADPHONES</span>
+<h2>Coming to your area</h2>
+<p class="month-range">{{ month_start|date:'F j' }}–{{ month_end|date:'j, Y' }} <span>· Upcoming shows</span></p>
+</div>
+<span class="muted small">Upcoming concerts · {{ profile.radius }}-mile radius</span>
+</div>
+<form class="search-bar" method="get">
+<input type="hidden" name="month" value="{{ month_start|date:'Y-m' }}">
+<input type="hidden" name="favorites" value="{{ favorites_only|yesno:'1,0' }}">
+<span aria-hidden="true">⌕</span>
+<label class="sr-only" for="search">Search concerts, artists, or venues</label>
+<input id="search" name="q" value="{{ query }}" placeholder="Search an artist, concert, or venue…">
+<button class="button">Find a show ↗</button>
+</form>
+<div class="filter-row">
+<a class="chip {% if not favorites_only %}active{% endif %}" href="/?month={{ month_start|date:'Y-m' }}&amp;q={{ query|urlencode }}&amp;favorites=0">All concerts</a>
+<a class="chip {% if favorites_only %}active{% endif %}" href="/?month={{ month_start|date:'Y-m' }}&amp;q={{ query|urlencode }}&amp;favorites=1">♡ My artists this month</a>
+<span class="muted small">{{ events|length }} shows{% if query %} matching “{{ query }}”{% endif %}</span>
+</div>{% if error and events %}<p role="status" class="muted">Some concert sources are unavailable: {{ error }} Showing available saved listings.</p>{% endif %}{% if error and not events %}<div class="empty-state">
+<div class="empty-icon">⌁</div>
+<h3>Your next show is out there.</h3>
+<p>{{ error }}</p>
+<a href="/settings/" class="button secondary">View connections ↗</a>
+</div>{% elif not events %}<div class="empty-state">
+<h3>No upcoming shows found for {{ month_start|date:'F' }}.</h3>
+<p>Try another artist, turn off the favorites filter, or expand your radius in settings.</p>
+<a href="/settings/">Adjust your location ↗</a>
+</div>{% else %}<div class="event-grid compact-event-grid">{% for event in events %}<article class="event-card">
+<a class="event-image" href="{% url 'detail' event.pk %}" aria-label="View {{ event.title }}">{% if event.image %}<img src="{{ event.image }}" alt="" loading="lazy" referrerpolicy="no-referrer">{% else %}<div class="image-placeholder">LIVE.</div>{% endif %}{% if event.favorite_match %}<span class="favorite-badge">♡ YOUR ARTIST</span>{% endif %}</a>
+<div class="event-info">
+<p class="event-date"><time datetime="{{ event.local_date|date:'Y-m-d' }}">{{ event.local_date|date:'D, M j'|default:'Date TBA' }}</time>{% if event.time_tba %}<span> · Time TBA</span>{% elif event.display_time %}<span> · {% localtime off %}{{ event.display_time|date:'g:i A' }}{% endlocaltime %}</span>{% endif %}</p>
+<h3>
+<a href="{% url 'detail' event.pk %}" title="{{ event.title }}">{{ event.title }}</a>
+</h3>
+<p class="muted small">{{ event.venue }} · {{ event.city }}</p>
+<div class="card-bottom">
+<span>See show details<br><small>Tickets and calendar links</small></span>
+<a class="round-link" href="{% url 'detail' event.pk %}" aria-label="View details for {{ event.title }}">↗</a>
+</div>
+</div>
+</article>{% endfor %}</div>{% endif %}
+{% if results_limited %}<p class="small muted">This month has more results than the provider can return. Narrow your search or radius to see additional shows.</p>{% endif %}
+<nav class="pagination month-pagination" aria-label="Concert months">{% if previous_month %}<a class="chip" href="?q={{ query|urlencode }}&amp;month={{ previous_month|date:'Y-m' }}&amp;favorites={{ favorites_only|yesno:'1,0' }}">← {{ previous_month|date:'F Y' }}</a>{% endif %}
+<span class="small muted">{{ month_start|date:'F Y' }}</span>
+<a class="chip next-month" href="?q={{ query|urlencode }}&amp;month={{ next_month|date:'Y-m' }}&amp;favorites={{ favorites_only|yesno:'1,0' }}">{{ next_month|date:'F Y' }} →</a></nav>
+</section>{% endblock %}

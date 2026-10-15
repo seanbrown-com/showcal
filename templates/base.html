@@ -1,0 +1,37 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Showcal{% endblock %}</title>
+<link rel="stylesheet" href="{% static 'app.css' %}">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header>
+<a class="brand" href="/" aria-label="Showcal home">
+<span class="brand-mark">s<span>↗</span>
+</span>show<span class="brand-light">cal</span>
+</a>{% if user.is_authenticated %}<nav aria-label="Main navigation">
+<a href="/" class="{% if request.path == '/' %}selected{% endif %}">Discover</a>
+<a href="/calendar/" class="{% if request.path == '/calendar/' %}selected{% endif %}">Calendar</a>
+<a href="/artists/" class="{% if request.path == '/artists/' %}selected{% endif %}">Artists</a>
+</nav>
+<div class="account">
+<a href="/settings/" aria-label="Account settings">
+<span class="avatar">{{ user.username|first|upper }}</span>
+<span>{{ user.username }}</span>
+</a>
+<form method="post" action="/logout/">{% csrf_token %}<button class="text-button" type="submit">Log out</button>
+</form>
+</div>{% else %}<span class="header-note">Your artists. Your calendar.</span>{% endif %}</header>
+<main id="main">{% for message in messages %}<div class="notice {{ message.tags }}" role="status">{{ message }}</div>{% endfor %}
+{% block content %}
+{% endblock %}</main>
+<footer>
+<span>showcal <span class="muted">/ made for the live version</span>
+</span>
+<span>ZIP data: <a href="https://www.zippopotam.us/">Zippopotam.us</a> / <a href="https://www.geonames.org/">GeoNames</a></span>
+</footer>
+</body>
+</html>

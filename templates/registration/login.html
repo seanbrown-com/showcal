@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block content %}<div class="auth-layout">
+<section class="auth-story">
+<span class="eyebrow">LESS SCROLLING. MORE ENCORES.</span>
+<h1>Your next<br>“I was there”<br>starts here<span class="orange">.</span>
+</h1>
+<p>Find the artists you love, discover nearby concerts,<br>and keep your calendar full.</p>
+<div class="sound-bars" aria-hidden="true">
+<i>
+</i>
+<i>
+</i>
+<i>
+</i>
+<i>
+</i>
+<i>
+</i>
+<i>
+</i>
+<i>
+</i>
+<i>
+</i>
+<i>
+</i>
+<i>
+</i>
+<i>
+</i>
+<i>
+</i>
+<i>
+</i>
+<i>
+</i>
+<i>
+</i>
+</div>
+<span class="tiny">YOUR CITY · YOUR ARTISTS · YOUR CALENDAR</span>
+</section>
+<section class="panel auth-card">
+<span class="eyebrow">WELCOME BACK</span>
+<h2>Take your seat.</h2>
+<p class="muted">Log in to your next night out.</p>
+<form method="post">{% csrf_token %}{{ form.as_p }}{% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}<button class="button full">Log in <span>↗</span>
+</button>
+</form>
+<p class="small">New around here? <a href="/signup/">Create an account</a>
+</p>
+</section>
+</div>{% endblock %}

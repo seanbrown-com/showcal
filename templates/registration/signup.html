@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}<div class="page-heading">
+<span class="eyebrow">YOUR NEXT NIGHT OUT</span>
+<h1>Make it personal<span class="orange">.</span>
+</h1>
+<p>Set your home base. We’ll find the music around you.</p>
+</div>
+<section class="panel form-panel">
+<h2>Create your account</h2>
+<form method="post">{% csrf_token %}{{ form.as_p }}<button class="button">Create account ↗</button>
+</form>
+<p class="small">Already have an account? <a href="/login/">Log in</a>
+</p>
+</section>{% endblock %}

@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block content %}<div class="page-heading">
+<span class="eyebrow">SET THE STAGE</span>
+<h1>A little more you<span class="orange">.</span>
+</h1>
+<p>Your home base, your library, your connections.</p>
+</div>
+<div class="settings-grid">
+<section class="panel"><h2>Your concert calendar</h2><p>Subscribe to nearby shows by your favorite artists for the next six months.</p><a class="button secondary" href="{% url 'calendar_settings' %}">Manage calendar subscription ↗</a></section>
+<section class="panel">
+<h2>Your location</h2>
+<p class="muted">Find concerts near your US ZIP code.</p>
+<form method="post">{% csrf_token %}<input type="hidden" name="action" value="profile">{{ form.as_p }}
+<button class="button">Save preferences ↗</button>
+</form>
+</section>
+<section class="panel">
+<h2>Service connections</h2>
+<p class="muted">Configured by your server administrator.</p>
+<ul class="status-list">
+<li>Concert discovery <span class="status {% if ticketmaster_ready %}ok{% endif %}">{% if ticketmaster_ready %}Configured{% else %}Needs API key{% endif %}</span>
+</li>
+<li>Facebook web search <span class="status {% if brave_ready %}ok{% endif %}">{% if brave_ready %}Configured{% else %}Search links available{% endif %}</span>
+</li>
+<li>Background worker <span class="status {% if worker_ok %}ok{% endif %}">{% if worker_ok %}Running{% else %}No recent heartbeat{% endif %}</span>
+</li>
+</ul>
+<p class="small muted">“Configured” means credentials are present, not that a provider connection has been verified. {% if worker %}Worker last seen {{ worker.heartbeat|timesince }} ago.{% endif %}</p>
+</section>
+<section class="panel" id="jellyfin">
+<span class="eyebrow">A WEEKLY DOSE OF YOUR FAVORITES</span>
+<h2>Connect Jellyfin</h2>
+<p class="muted">Import track artists and album artists from your library. New artists are added weekly. Removed favorites stay removed.</p>
+<form method="post">{% csrf_token %}<input type="hidden" name="action" value="jellyfin">{{ jf.as_p }}<button class="button">Save connection ↗</button>
+</form>{% if profile.jellyfin_token %}<p class="small">Last successful import: {{ profile.last_sync|date:'M j, Y g:i A T'|default:'Pending' }}</p>{% if profile.sync_error %}<p class="notice warning">{{ profile.sync_error }}</p>{% endif %}<div class="action-links">
+<form method="post" action="{% url 'jellyfin_sync' %}">{% csrf_token %}<button class="button secondary">Sync now ↻</button>
+</form>
+<form method="post" action="{% url 'jellyfin_disconnect' %}">{% csrf_token %}<button class="text-button">Disconnect</button>
+</form>
+</div>{% endif %}</section>
+<section class="panel notes-panel"><span class="eyebrow">YOUR LIVE MUSIC CALENDAR</span><h2>From your library to live shows.</h2><p>Favorite artists manually or import them from Jellyfin. Discover nearby concerts and subscribe to a calendar covering the next six months.</p><p class="small muted">The worker refreshes calendar discovery daily and imports new Jellyfin artists weekly. Ticket links open the provider’s website.</p><a href="{% url 'calendar_settings' %}">Open your concert calendar ↗</a></section>
+</div>{% endblock %}

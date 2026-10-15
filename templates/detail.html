@@ -1,0 +1,26 @@
+{% extends 'base.html' %}{% load tz %}
+{% block title %}{{ event.title }} · Showcal{% endblock %}
+{% block content %}<a href="/" class="back-link">← Discover concerts</a>
+<div class="detail-layout concert-details">
+<section>
+<div class="detail-image">{% if event.image %}<img src="{{ event.image }}" alt="" referrerpolicy="no-referrer">{% else %}<div class="image-placeholder">LIVE IS BETTER.</div>{% endif %}</div>
+<span class="eyebrow">{{ event.status }} · {{ event.city }}</span>
+<h1 class="detail-title">{{ event.title }}</h1>
+<p class="detail-meta">{{ event.local_date|date:'l, F j, Y'|default:'Date to be announced' }}{% if event.time_tba %} · Time TBA{% elif event.display_time %} · {% localtime off %}{{ event.display_time|date:'g:i A T' }}{% endlocaltime %}{% endif %}<br>{{ event.venue }}</p>
+<div class="action-links">{% if event.url %}<a class="button" href="{{ event.url }}" target="_blank" rel="noopener noreferrer">Tickets at provider ↗</a>{% endif %}
+<a class="button secondary" href="{{ axs_search }}" target="_blank" rel="noopener noreferrer">Find AXS tickets (web search) ↗</a>
+{% if google_url %}<a class="button secondary" href="{% url 'calendar' event.pk %}">Apple / Outlook calendar ↓</a>
+<a class="button secondary" href="{{ google_url }}" target="_blank" rel="noopener noreferrer">Google Calendar ↗</a>{% endif %}</div>
+<p class="small muted">Calendar events use venue time. End times are estimated; confirm with the venue. Android users can use Google Calendar.</p>
+<p class="small muted">AXS search opens Google results for this concert. Confirm the date, venue, and whether tickets are standard or resale. </p>
+<section class="panel social-panel">
+<span class="eyebrow">MAKE IT A NIGHT OUT</span>
+<h3>Find the Facebook event</h3>
+<p class="muted">Find the matching event, then mark yourself interested or going on Facebook.</p>
+<div class="action-links">
+<a href="{{ facebook_search }}" target="_blank" rel="noopener noreferrer">Search Facebook ↗</a>
+<a href="{{ web_search }}" target="_blank" rel="noopener noreferrer">Search the web ↗</a>{% if brave_ready %}<a href="{% url 'facebook' event.pk %}">Find event pages ↗</a>{% endif %}</div>
+</section>
+</section>
+
+</div>{% endblock %}

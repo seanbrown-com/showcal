@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block content %}<div class="page-heading">
+<span class="eyebrow">FROM YOUR LIBRARY TO THE FRONT ROW</span>
+<h1>Your kind of loud<span class="orange">.</span>
+</h1>
+<p>Follow your favorites. Find them when they come to town.</p>
+</div>
+<div class="integration-banner">
+<div>
+<span class="eyebrow">JELLYFIN × TICKET WATCH</span>
+<h3>Your library has good taste.</h3>
+<p>Bring your artists along. New additions sync every week.</p>
+</div>
+<a href="/settings/#jellyfin" class="button secondary">Manage Jellyfin ↗</a>
+</div>
+<form class="search-bar">
+<span aria-hidden="true">⌕</span>
+<label class="sr-only" for="artist-search">Find an artist</label>
+<input id="artist-search" name="q" placeholder="Search for an artist to follow…" value="{{ query }}">
+<button class="button">Find artist ↗</button>
+</form>{% if error %}<p class="notice warning">{{ error }}</p>{% endif %}
+{% if query %}<h2>Search results</h2>
+<div class="artist-grid">{% for result in results %}<article class="panel artist-card">
+<div class="artist-monogram">{{ result.name|first }}</div>
+<h3>{{ result.name }}</h3>
+<form method="post" action="{% url 'add_artist' %}">{% csrf_token %}<input type="hidden" name="external_id" value="{{ result.id }}">
+<button class="button secondary">♡ Favorite</button>
+</form>
+</article>{% empty %}
+{% if not error %}<p>No artists found. Try a different name.</p>{% endif %}
+{% endfor %}</div>{% endif %}<div class="section-heading">
+<h2>Favorite artists</h2>
+<span class="muted">{{ artists|length }} in your rotation</span>
+</div>
+<div class="artist-grid">{% for artist in artists %}<article class="panel artist-card">
+<div class="artist-monogram">{{ artist.name|first }}</div>
+<span class="eyebrow">{{ artist.source }}</span>
+<h3>{{ artist.name }}</h3>
+<a href="/?q={{ artist.name|urlencode }}">Find nearby shows ↗</a>
+<form method="post" action="{% url 'remove_artist' artist.pk %}">{% csrf_token %}<button class="text-button">Remove favorite</button>
+</form>
+</article>{% empty %}<div class="empty-state wide">
+<h3>Who’s on repeat?</h3>
+<p>Search for an artist above or connect Jellyfin to import your library.</p>
+</div>{% endfor %}</div>{% endblock %}

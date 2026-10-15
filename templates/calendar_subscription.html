@@ -1,0 +1,24 @@
+{% extends 'base.html' %}{% load tz %}
+{% block content %}
+<div class="page-heading"><span class="eyebrow">YOUR NEXT SIX MONTHS</span><h1>Your concert calendar.</h1><p>Nearby shows by your favorite artists, through {{ horizon_end|date:'F j, Y' }}. Your ZIP code and radius apply.</p></div>
+<section class="panel">
+{% if subscription %}
+<h2>Subscribe on your devices</h2>
+<p><a class="button" href="{{ webcal_url }}">Subscribe to calendar ↗</a></p>
+<label for="feed-url">Private subscription URL</label><input id="feed-url" type="url" readonly value="{{ feed_url }}" onclick="this.select()">
+<p class="small muted">Copy this URL into your calendar’s “Subscribe” or “From URL” option. Importing an ICS file once will not keep it updated. Anyone with this private link can read your concert calendar.</p>
+<p class="small muted">For other devices, APP_URL must use a reachable server address. A localhost link works only on this computer. Use your public HTTPS address for Google Calendar subscriptions.</p>
+<p>Last discovery refresh: {{ subscription.refreshed_at|date:'M j, Y g:i A T'|default:'Pending — start the background worker' }}.</p>
+{% if subscription.error %}<p role="status">{{ subscription.error }} Previously fetched shows are retained.</p>{% endif %}
+<p class="small muted">Discovery refreshes daily while the worker runs. Your calendar app controls when updates appear. Coverage includes Ticketmaster and individually imported AXS events; new AXS shows are not discovered automatically. End times are estimates.</p>
+<div class="action-links"><form method="post">{% csrf_token %}<button class="button secondary" name="action" value="refresh">Refresh discovery</button></form>
+<form method="post">{% csrf_token %}<button class="text-button" name="action" value="rotate">Replace private link</button></form>
+<form method="post">{% csrf_token %}<button class="text-button" name="action" value="disable">Disable subscription</button></form></div>
+{% else %}
+<p>Create a private, automatically updated subscription for nearby concerts by your favorite artists.</p>
+<form method="post">{% csrf_token %}<button class="button" name="action" value="enable">Create calendar subscription ↗</button></form>
+{% endif %}</section>
+{% if subscription %}<section class="panel"><h2>Upcoming shows</h2>{% if error %}<p>{{ error }}</p>{% endif %}
+{% regroup events by local_date|date:'F Y' as months %}
+{% for month in months %}<h3>{{ month.grouper }}</h3><ul>{% for event in month.list %}<li><time>{{ event.local_date|date:'D, M j' }}</time>{% if event.display_time and not event.time_tba %} · {% localtime off %}{{ event.display_time|date:'g:i A' }}{% endlocaltime %}{% endif %} — <a href="{% url 'detail' event.pk %}">{{ event.title }}</a> · {{ event.venue }}</li>{% endfor %}</ul>{% empty %}<p>No matching shows are currently available. Add favorite artists or wait for the first discovery refresh.</p>{% endfor %}</section>{% endif %}
+{% endblock %}
