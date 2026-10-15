@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Showcal</title>
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="#ed653e"/>
+  <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M34 27 C30 21 17 23 17 29 C17 36 33 31 33 40 C33 48 20 49 14 43" stroke-width="5.5"/>
+    <path d="M39 25 L51 13 M40 13 H51 V24" stroke-width="4"/>
+  </g>
+</svg>
