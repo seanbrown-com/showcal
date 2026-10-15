@@ -41,7 +41,7 @@ def validate_url(value):
     return parsed
 
 
-def create(path, url, bind, port):
+def create(path, url, bind, port, import_env=None):
     parsed = validate_url(url)
     ipaddress.ip_address(bind)
     if not 1 <= port <= 65535:
@@ -52,10 +52,15 @@ def create(path, url, bind, port):
               'ALLOWED_HOSTS':','.join(dict.fromkeys(['localhost','127.0.0.1',parsed.hostname])),
               'CSRF_TRUSTED_ORIGINS':url.rstrip('/'),'COOKIE_SECURE':str(parsed.scheme=='https').lower(),
               'BIND_ADDRESS':bind,'PORT':str(port)}
+    if import_env:
+        previous = read_env(Path(import_env))
+        for key in ['SECRET_KEY','CREDENTIAL_KEY','TICKETMASTER_API_KEY','BRAVE_API_KEY']:
+            if key in previous:
+                values[key] = previous[key]
     output = []
     for line in (ROOT/'.env.example').read_text().splitlines():
         key = line.partition('=')[0]
-        output.append(f'{key}={values[key]}' if key in values else line)
+        output.append(f'{key}={shlex.quote(values[key])}' if key in values else line)
     fd = os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
     with os.fdopen(fd,'w') as stream:
         stream.write('\n'.join(output)+'\n')
@@ -82,32 +87,29 @@ def validate(path):
         raise ValueError('Use COOKIE_SECURE=true with HTTPS.')
     if parsed.scheme=='http' and values.get('COOKIE_SECURE','').lower()!='false':
         raise ValueError('Use COOKIE_SECURE=false for private-LAN HTTP testing.')
-    if not 1 <= int(values.get('PORT','8000')) <= 65535:
+    if not 1 <= int(values.get('PORT','8003')) <= 65535:
         raise ValueError('Invalid PORT.')
     ipaddress.ip_address(values.get('BIND_ADDRESS','127.0.0.1'))
-    if not re.fullmatch(r'[a-z0-9][a-z0-9_-]*',values.get('COMPOSE_PROJECT_NAME','showcal')):
-        raise ValueError('Invalid COMPOSE_PROJECT_NAME.')
     return values
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action',choices=['create','validate','project','url'])
+    parser.add_argument('action',choices=['create','validate','url'])
     parser.add_argument('--url')
     parser.add_argument('--bind',default='127.0.0.1')
-    parser.add_argument('--port',type=int,default=8000)
+    parser.add_argument('--port',type=int,default=8003)
+    parser.add_argument('--import-env',type=Path)
     args = parser.parse_args()
     path = ROOT/'.env'
     try:
         if args.action=='create':
             if not args.url:
                 parser.error('--url is required to create configuration')
-            create(path,args.url,args.bind,args.port)
+            create(path,args.url,args.bind,args.port,args.import_env)
         else:
             values = validate(path)
-            if args.action=='project':
-                print(values.get('COMPOSE_PROJECT_NAME','showcal'))
-            elif args.action=='url':
+            if args.action=='url':
                 print(values['APP_URL'])
     except (ValueError,OSError) as exc:
         parser.exit(1,f'Configuration error: {exc}\n')

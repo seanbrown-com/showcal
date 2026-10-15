@@ -1,34 +1,57 @@
 #!/usr/bin/env bash
-# Shared by the installer/updater. Do not source .env: Compose reads it as data.
 set -Eeuo pipefail
 umask 077
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+PYTHON_BIN="${PYTHON_BIN:-python3}"
 fail() { printf 'Error: %s\n' "$*" >&2; exit 1; }
 require_tools() {
-  [[ "$(uname -s)" == Linux ]] || fail 'Run this deployment script inside your Linux LXC.'
-  for tool in docker git python3 flock; do
-    command -v "$tool" >/dev/null || fail "Missing $tool. See docs/DEPLOYMENT.md."
+  [[ "$(uname -s)" == Linux && "$(id -u)" == 0 ]] || fail 'Run as root inside your Linux LXC.'
+  for tool in git flock systemctl runuser useradd "$PYTHON_BIN"; do
+    command -v "$tool" >/dev/null || fail "Missing $tool; see docs/DEPLOYMENT.md."
   done
-  docker compose version >/dev/null || fail 'Docker Compose v2 is required.'
-  docker info >/dev/null 2>&1 || fail 'Docker is not running or this user cannot access it.'
+  systemctl show --property=Version --value >/dev/null || fail 'systemd must be running.'
+  "$PYTHON_BIN" -c 'import sys; assert sys.version_info >= (3,11), "Python 3.11+ required"'
+  [[ "$ROOT" == /opt/* && "$ROOT" =~ ^[/a-zA-Z0-9_.-]+$ ]] || fail 'Install under /opt using a path without spaces.'
   mkdir -p .deploy
   exec 9>.deploy/operation.lock
-  flock -n 9 || fail 'Another installation/update is already running.'
+  flock -n 9 || fail 'Another installation/update is running.'
 }
-load_compose() {
-  python3 scripts/configure.py validate
-  chmod 600 .env
-  PROJECT="$(python3 scripts/configure.py project)"
-  if [[ "$PROJECT" == showcal ]] && docker volume inspect ticket-watch_ticket-data >/dev/null 2>&1; then
-    fail 'Legacy Ticket Watch data found. Set COMPOSE_PROJECT_NAME=ticket-watch and DATABASE_FILENAME=ticket-watch.sqlite3 in .env to reuse it; see docs/DEPLOYMENT.md.'
+prepare_user() {
+  if ! id showcal >/dev/null 2>&1; then
+    useradd --system --user-group --home-dir /var/lib/showcal --shell /usr/sbin/nologin showcal
   fi
-  COMPOSE=(docker compose --project-name "$PROJECT" --env-file "$ROOT/.env" -f "$ROOT/compose.yaml")
-  "${COMPOSE[@]}" config --quiet
+  [[ "$(id -u showcal)" != 0 ]] || fail 'The showcal service user must not be root.'
+  install -d -o showcal -g showcal -m 700 /var/lib/showcal
+}
+load_config() {
+  "$PYTHON_BIN" scripts/configure.py validate
+  chown root:showcal .env
+  chmod 640 .env
+}
+build_environment() {
+  "$PYTHON_BIN" -m venv .venv-server
+  .venv-server/bin/python -m pip install -r requirements.lock.txt
+  # The service user needs read/execute access, never write access to application code.
+  chmod -R a+rX .venv-server
+  find static templates concerts config scripts -type d -exec chmod a+rx {} +
+  find static templates concerts config scripts -type f -exec chmod a+r {} +
+  chmod a+rx "$ROOT"
+  chmod a+r manage.py
+}
+manage() {
+  runuser -u showcal -- "$ROOT/.venv-server/bin/python" "$ROOT/scripts/run_service.py" manage "$@"
 }
 start_services() {
-  "${COMPOSE[@]}" run --rm --no-deps migrate
-  "${COMPOSE[@]}" up -d --no-deps --wait --wait-timeout 180 web worker
-  "${COMPOSE[@]}" ps
-  printf '\nShowcal: %s\n' "$(python3 scripts/configure.py url)"
+  manage migrate --noinput
+  # Static assets are deployer-owned and read-only to the service user.
+  .venv-server/bin/python scripts/run_service.py manage collectstatic --noinput
+  chmod -R a+rX staticfiles
+  "$PYTHON_BIN" scripts/native.py clear-lease
+  "$PYTHON_BIN" scripts/native.py units
+  systemctl daemon-reload
+  systemctl enable showcal showcal-worker
+  systemctl restart showcal showcal-worker
+  "$PYTHON_BIN" scripts/native.py health
+  printf '\nShowcal: %s\n' "$("$PYTHON_BIN" scripts/configure.py url)"
 }

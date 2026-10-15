@@ -1,10 +1,10 @@
-# Showcal validation — 2026-10-14
+# Showcal validation — native systemd deployment
 
-- 51 Django tests passed, covering discovery, favorites, Jellyfin connections, calendar subscriptions, worker coordination, and removal of price-monitoring routes and controls.
-- Seven deployment tests passed, covering configuration, update ordering, database backups, dirty-checkout refusal and migration failures.
-- Django migration consistency, installer/updater Bash syntax and Docker Compose configuration checks passed.
-- The local database was backed up before applying `0007_remove_price_monitoring`. Account, profile, artist, event and subscription records were compared before and after migration, excluding intentionally removed price fields and the email preference. All retained values matched; SQLite integrity checks passed.
-- Calendar subscription tokens and legacy event UIDs remain unchanged to avoid disrupting existing subscriptions.
-- Ticket-price collection, budgets, email alerts and Chromium worker components have been removed. The remaining worker refreshes calendars daily and Jellyfin artists weekly.
+- 51 Django tests passed; Django system checks and migration consistency checks passed.
+- 16 deployment tests passed. They cover configuration preservation and private permissions, non-execution of configuration values, SQLite backup integrity, overwrite refusal, matching Jellyfin encryption keys, occupied ports, unprivileged unit definitions, successful data-import flow, incomplete-transfer refusal, Git updates, dirty checkouts, backup failures and migration failures.
+- Installer/updater Bash syntax checks and Git whitespace checks passed.
+- The deployment-flow tests use real temporary Git repositories and SQLite databases while replacing host administration and dependency installation with controlled fixtures. They do not modify systemd, user accounts or production data on the development computer.
+- CI is configured to run application and deployment tests on Python 3.11 and 3.13. Local tests ran using the existing Python 3.14 environment; the new CI matrix has not been run here.
+- The native installation has not yet been executed on the user's Proxmox LXC. Live systemd sandbox compatibility, dependency downloads and remote service health remain to be verified during installation. Live external integrations and device calendar subscriptions were not retested for this deployment-only change.
 
-A complete Docker image build/container health check and installation on Proxmox LXC remain unverified. The previous build attempt failed retrieving the Python base image from Docker Hub. Live external integrations and calendar subscriptions on physical devices were not retested during this change. Deployment tests use controlled fixtures rather than the remote LXC.
+Docker deployment files and Docker CI checks were removed. No application schema or local user data was changed by this deployment update. Existing database backups remain ignored by Git.

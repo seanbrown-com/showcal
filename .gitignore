@@ -23,3 +23,5 @@ tests-output/
 htmlcov/
 .idea/
 .vscode/
+
+.venv-server/

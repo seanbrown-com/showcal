@@ -1,6 +1,6 @@
 # Showcal
 
-A self-hosted concert discovery and calendar app for Docker in a Proxmox LXC. Find nearby shows by your favorite artists, import artists from Jellyfin, and subscribe to a private six-month concert calendar.
+A self-hosted concert discovery and calendar app for systemd in a Proxmox LXC. Find nearby shows by your favorite artists, import artists from Jellyfin, and subscribe to a private six-month concert calendar.
 
 ## Features
 
@@ -16,28 +16,34 @@ Showcal does **not** monitor ticket prices, scrape inventory, set ticket budgets
 
 ## Install on your LXC
 
-Requires Docker Engine, Docker Compose v2, Git, Python 3, Bash and `flock` inside a Docker-capable Linux LXC.
+Run as root inside Debian 12+/Ubuntu 24.04+ with systemd and Python 3.11+. No Docker is required. The native deployment uses a dedicated user, virtual environment and separate web/worker services. Port 8003 avoids the default ports of Bookkeeper, Landing-page and Coin-watch; the installer checks availability.
 
 ```sh
-git clone --branch main YOUR_GIT_REPO_URL /opt/showcal
+apt-get update
+apt-get install -y git python3 python3-venv ca-certificates util-linux
+git clone --branch main https://github.com/seanbrown-com/showcal.git /opt/showcal
 cd /opt/showcal
-./scripts/install-lxc.sh --url https://shows.example.com --bind 0.0.0.0
+./scripts/install-lxc.sh --url http://YOUR_LXC_IP:8003 --bind 0.0.0.0
 ```
 
-Use your actual configured hostname. The installer generates private configuration and keys, builds the app, migrates SQLite in a persistent Docker volume, starts web/worker and checks health. Configure `TICKETMASTER_API_KEY` in `.env`; connect Jellyfin through Settings. SMTP and Chromium are not required.
+For a configured HTTPS reverse proxy, use `--url https://shows.example.com`. The installer does not configure DNS, certificates or the proxy. Use `--bind 0.0.0.0` when your proxy is on another machine; otherwise the default is loopback. Use `--port` to change the listening port.
 
-To update from `origin/main`:
+**Bringing your local data?** Add `--import-db /root/showcal-transfer/database.sqlite3 --import-env /root/showcal-transfer/config.env` to the installation command. Do this on the first installation, before creating another account. See the [step-by-step deployment and transfer guide](docs/DEPLOYMENT.md).
+
+Configuration stays in `/opt/showcal/.env`; the database lives at `/var/lib/showcal/showcal.sqlite3`. Preserve `CREDENTIAL_KEY` to keep Jellyfin connections readable. The service runner loads `.env` as data without executing shell expressions. Background work runs in `showcal-worker.service`.
+
+For updates after pushing to `main`:
 
 ```sh
 cd /opt/showcal
 ./scripts/update-lxc.sh
 ```
 
-The updater requires a clean `main` checkout, preserves `.env`, backs up the database, applies migrations and restarts services. See the [deployment guide](docs/DEPLOYMENT.md) for Git publishing, reverse proxies, backups, localhost data transfer and upgrades from Ticket Watch.
+The updater requires a clean `main` checkout. It stops services, backs up SQLite and configuration, fast-forwards from `origin/main`, installs dependencies, migrates and restarts. Updates involve downtime. It leaves services stopped if deployment fails; see the recovery guide before restarting.
 
 ## Local development
 
-Python 3.13+:
+Python 3.11+:
 
 ```sh
 python3 -m venv .venv
@@ -46,9 +52,9 @@ python3 -m venv .venv
 .venv/bin/python manage.py runserver 127.0.0.1:8000
 ```
 
-In another terminal, start `.venv/bin/python manage.py worker`. Django does not load `.env` automatically outside Docker Compose; export needed configuration into both processes. Keep your existing `CREDENTIAL_KEY` when moving or renaming the project, so saved Jellyfin tokens remain readable.
+In another terminal, start `.venv/bin/python manage.py worker`. For local development, Django does not load `.env` automatically; export needed configuration into both processes. Production systemd services load it through `scripts/run_service.py`. Keep your existing `CREDENTIAL_KEY` when moving or renaming the project, so saved Jellyfin tokens remain readable.
 
-Calendar subscriptions are under **Settings → Your concert calendar**, or `/calendar/`. `APP_URL` must be reachable from subscribing devices; localhost works only on the same computer. Google Calendar needs a public URL. Calendar clients control their refresh timing.
+Use **Subscribe to calendar** at the top of Discover, or open `/calendar/`. `APP_URL` must be reachable from subscribing devices; localhost works only on the same computer. Google Calendar needs a public URL. Calendar clients control their refresh timing.
 
 ## Checks
 
@@ -60,4 +66,4 @@ Calendar subscriptions are under **Settings → Your concert calendar**, or `/ca
 bash -n scripts/common.sh scripts/install-lxc.sh scripts/update-lxc.sh
 ```
 
-GitHub Actions runs checks and builds the application image. Integration details are in [INTEGRATIONS.md](docs/INTEGRATIONS.md). This personal app has no email verification or self-service password reset; restrict access to trusted users.
+GitHub Actions runs application and deployment checks on Python 3.11 and 3.13. Integration details are in [INTEGRATIONS.md](docs/INTEGRATIONS.md). This personal app has no email verification or self-service password reset; restrict access to trusted users.
